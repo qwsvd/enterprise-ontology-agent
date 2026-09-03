@@ -9,6 +9,7 @@ description = "A small learning project for enterprise ontology application engi
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "neo4j>=5.0",
   "pydantic>=2.0",
 ]
 
