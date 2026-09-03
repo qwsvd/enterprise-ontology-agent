@@ -84,6 +84,39 @@ class OpenAICompatibleClient:
             raise ValueError("LLM response content must be a JSON string")
         return content
 
+    def chat_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Send an OpenAI-compatible function-calling chat request."""
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "thinking": {"type": "disabled"},
+        }
+        request = Request(
+            f"{self._base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urlopen(request, timeout=30) as response:
+            response_data = json.load(response)
+
+        try:
+            message = response_data["choices"][0]["message"]
+        except (IndexError, KeyError, TypeError) as error:
+            raise ValueError("LLM response did not contain a completion message") from error
+        if not isinstance(message, dict):
+            raise ValueError("LLM completion message must be an object")
+        return message
+
 
 def extract_ontology(text: str, client: LLMClient) -> OntologyExtraction:
     """Convert one LLM JSON response into validated ontology domain models."""

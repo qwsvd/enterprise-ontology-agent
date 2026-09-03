@@ -124,6 +124,43 @@ def test_openai_compatible_client_requests_json_object(monkeypatch: pytest.Monke
     assert "Each relation needs source_name" in payload["messages"][0]["content"]
 
 
+def test_openai_compatible_client_uses_tool_calling_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests = []
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self, *args: object) -> bytes:
+            return b'{"choices": [{"message": {"content": "answer"}}]}'
+
+    def fake_urlopen(request: object, timeout: int) -> FakeResponse:
+        requests.append(request)
+        return FakeResponse()
+
+    monkeypatch.setattr(llm_extraction, "urlopen", fake_urlopen)
+    client = OpenAICompatibleClient(
+        api_key="test-key",
+        base_url="https://api.example.test/v1",
+        model="test-model",
+    )
+    tools = [{"type": "function", "function": {"name": "owners_for_service"}}]
+
+    assert client.chat_with_tools([{"role": "user", "content": "question"}], tools) == {
+        "content": "answer"
+    }
+    payload = json.loads(requests[0].data)
+    assert payload["tools"] == tools
+    assert payload["tool_choice"] == "auto"
+    assert payload["thinking"] == {"type": "disabled"}
+    assert "response_format" not in payload
+
+
 def test_extraction_prompt_uses_canonical_names_for_type_descriptors() -> None:
     prompt = llm_extraction._EXTRACTION_INSTRUCTIONS
 
