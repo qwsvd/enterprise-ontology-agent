@@ -74,6 +74,25 @@ def test_agent_rejects_a_direct_answer_before_a_graph_tool_call() -> None:
         GraphAgent(client, FakeRetrieval()).answer("Who owns Payment API?")  # type: ignore[arg-type]
 
 
+def test_agent_run_records_the_graph_tool_that_was_executed() -> None:
+    client = FakeLLMClient(
+        [
+            _tool_call("owners_for_service", {"service_name": "Payment API"}),
+            {"content": "Payments owns Payment API."},
+        ]
+    )
+
+    run = GraphAgent(client, FakeRetrieval([_object()])).run("Who owns Payment API?")  # type: ignore[arg-type]
+
+    assert run.question == "Who owns Payment API?"
+    assert run.final_answer == "Payments owns Payment API."
+    assert run.tool_calls[0].tool_name == "owners_for_service"
+    assert run.tool_calls[0].argument == "Payment API"
+    assert run.tool_calls[0].result_count == 1
+    assert run.tool_calls[0].result_ids == ["team-payments"]
+    assert run.tool_calls[0].result_names == ["Payments"]
+
+
 @pytest.mark.parametrize(
     ("tool_name", "argument_name", "argument_value", "answer"),
     [

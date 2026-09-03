@@ -21,10 +21,9 @@ Data
 - **Knowledge Graph:** `OntologyGraph` provides a small in-memory domain
   container. `Neo4jRepository` is the first persistence implementation and
   stores the same domain objects and relations in Neo4j.
-- **Retrieval:** **future work.** It will locate useful graph information for a
-  request.
-- **Agent:** **future work.** It will use retrieved information to support a
-  task.
+- **Retrieval:** `Neo4jGraphRetrieval` provides four fixed, typed graph lookups.
+- **Agent:** `GraphAgent` selects one of those typed lookups through LLM tool
+  calling and returns only after an approved graph tool has executed.
 - **API / MCP:** **future work.** It will expose the application to callers and
   compatible tools.
 
@@ -86,3 +85,21 @@ python -m pytest tests/test_neo4j_integration.py
 
 This test writes two idempotent records with `integration-` IDs and one
 relation. It does not remove them.
+
+## Run the live graph-agent evaluation
+
+The evaluation sends the checked-in questions to the configured LLM and reads
+the existing Neo4j graph, so it may consume provider usage. It does not seed,
+mutate, reset, or prepare graph data. Before running it, prepare the graph
+separately so it contains the benchmark's expected sample facts for `Payments`,
+`Payment API`, `payment-service`, `INC-204`, and `Alice`. Set `LLM_API_KEY`,
+`LLM_BASE_URL`, and `LLM_MODEL`, then run:
+
+```powershell
+python scripts/evaluate_agent.py
+```
+
+It prints aggregate metrics and writes all per-case traces to
+`artifacts/agent_eval_results.json`. No-result accuracy uses a deliberately
+small set of English and Chinese phrases, so it can undercount correct but
+unrecognized paraphrases; it is not an LLM-based quality judgment.

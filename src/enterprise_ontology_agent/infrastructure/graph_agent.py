@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from enterprise_ontology_agent.infrastructure.graph_retrieval import (
@@ -11,6 +12,26 @@ from enterprise_ontology_agent.ontology import OntologyObject
 
 
 MAX_TOOL_ITERATIONS = 3
+
+
+@dataclass(frozen=True)
+class AgentToolCall:
+    """One approved graph tool call that the agent executed."""
+
+    tool_name: str
+    argument: str
+    result_count: int
+    result_ids: list[str]
+    result_names: list[str]
+
+
+@dataclass(frozen=True)
+class AgentRun:
+    """A grounded agent answer and the graph calls used to produce it."""
+
+    question: str
+    final_answer: str
+    tool_calls: list[AgentToolCall]
 
 
 class ToolCallingLLMClient(Protocol):
@@ -37,12 +58,17 @@ class GraphAgent:
 
     def answer(self, question: str) -> str:
         """Run the bounded tool-call loop and return the LLM's final answer."""
+        return self.run(question).final_answer
+
+    def run(self, question: str) -> AgentRun:
+        """Run the bounded tool-call loop and retain its executed graph calls."""
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": _AGENT_INSTRUCTIONS},
             {"role": "user", "content": question},
         ]
         tool_iterations = 0
         graph_tool_executed = False
+        executed_tool_calls: list[AgentToolCall] = []
 
         while True:
             message = self._client.chat_with_tools(messages, _GRAPH_TOOLS)
@@ -53,7 +79,11 @@ class GraphAgent:
                 content = message.get("content")
                 if not isinstance(content, str) or not content.strip():
                     raise ValueError("LLM did not return a final answer")
-                return content
+                return AgentRun(
+                    question=question,
+                    final_answer=content,
+                    tool_calls=executed_tool_calls,
+                )
             if not isinstance(tool_calls, list):
                 raise ValueError("LLM tool_calls must be a list")
 
@@ -74,6 +104,15 @@ class GraphAgent:
                 call_id, name, argument = _validate_tool_call(tool_call)
                 results = _run_retrieval_tool(self._retrieval, name, argument)
                 graph_tool_executed = True
+                executed_tool_calls.append(
+                    AgentToolCall(
+                        tool_name=name,
+                        argument=argument,
+                        result_count=len(results),
+                        result_ids=[result.id for result in results],
+                        result_names=[result.name for result in results],
+                    )
+                )
                 messages.append(
                     {
                         "role": "tool",

@@ -1,0 +1,22 @@
+[
+  {"id": "owner-en-1", "question": "Who owns Payment API?", "expected_tool": "owners_for_service", "expected_argument": "Payment API", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "owner-en-2", "question": "Which team is responsible for Payment API?", "expected_tool": "owners_for_service", "expected_argument": "Payment API", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "owner-zh-1", "question": "谁负责 Payment API？", "expected_tool": "owners_for_service", "expected_argument": "Payment API", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "owner-zh-2", "question": "Payment API 的所有团队是谁？", "expected_tool": "owners_for_service", "expected_argument": "Payment API", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "owner-none-1", "question": "Who owns Unknown API?", "expected_tool": "owners_for_service", "expected_argument": "Unknown API", "expected_entities": [], "expect_no_result": true},
+  {"id": "repository-en-1", "question": "Which repository implements Payment API?", "expected_tool": "repositories_for_service", "expected_argument": "Payment API", "expected_entities": ["payment-service"], "expect_no_result": false},
+  {"id": "repository-en-2", "question": "What code repository backs Payment API?", "expected_tool": "repositories_for_service", "expected_argument": "Payment API", "expected_entities": ["payment-service"], "expect_no_result": false},
+  {"id": "repository-zh-1", "question": "哪个仓库实现 Payment API？", "expected_tool": "repositories_for_service", "expected_argument": "Payment API", "expected_entities": ["payment-service"], "expect_no_result": false},
+  {"id": "repository-zh-2", "question": "Payment API 对应的代码库是什么？", "expected_tool": "repositories_for_service", "expected_argument": "Payment API", "expected_entities": ["payment-service"], "expect_no_result": false},
+  {"id": "repository-none-1", "question": "Which repository implements Unknown API?", "expected_tool": "repositories_for_service", "expected_argument": "Unknown API", "expected_entities": [], "expect_no_result": true},
+  {"id": "incident-en-1", "question": "What service did INC-204 affect?", "expected_tool": "services_affected_by_incident", "expected_argument": "INC-204", "expected_entities": ["Payment API"], "expect_no_result": false},
+  {"id": "incident-en-2", "question": "Which service was impacted by incident INC-204?", "expected_tool": "services_affected_by_incident", "expected_argument": "INC-204", "expected_entities": ["Payment API"], "expect_no_result": false},
+  {"id": "incident-zh-1", "question": "INC-204 影响了哪个服务？", "expected_tool": "services_affected_by_incident", "expected_argument": "INC-204", "expected_entities": ["Payment API"], "expect_no_result": false},
+  {"id": "incident-zh-2", "question": "事故 INC-204 受影响的服务是什么？", "expected_tool": "services_affected_by_incident", "expected_argument": "INC-204", "expected_entities": ["Payment API"], "expect_no_result": false},
+  {"id": "incident-none-1", "question": "What service did INC-999 affect?", "expected_tool": "services_affected_by_incident", "expected_argument": "INC-999", "expected_entities": [], "expect_no_result": true},
+  {"id": "team-en-1", "question": "Which team is Alice in?", "expected_tool": "teams_for_person", "expected_argument": "Alice", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "team-en-2", "question": "What team does Alice belong to?", "expected_tool": "teams_for_person", "expected_argument": "Alice", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "team-zh-1", "question": "Alice 属于哪个团队？", "expected_tool": "teams_for_person", "expected_argument": "Alice", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "team-zh-2", "question": "Alice 在哪个团队？", "expected_tool": "teams_for_person", "expected_argument": "Alice", "expected_entities": ["Payments"], "expect_no_result": false},
+  {"id": "team-none-1", "question": "Which team is Bob in?", "expected_tool": "teams_for_person", "expected_argument": "Bob", "expected_entities": [], "expect_no_result": true}
+]
