@@ -1,2 +1,4 @@
 # enterprise-ontology-agent
-AI-native enterprise ontology and knowledge agent with Neo4j, temporal knowledge graphs, hybrid retrieval, MCP, and evaluation.
+[![CI](https://github.com/qwsvd/enterprise-ontology-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/qwsvd/enterprise-ontology-agent/actions/workflows/ci.yml)
+
+A small enterprise ontology project with Neo4j persistence and typed retrieval, structured, GitHub, and LLM ingestion, a grounded tool-calling agent, evaluation, and read-only MCP tools.
