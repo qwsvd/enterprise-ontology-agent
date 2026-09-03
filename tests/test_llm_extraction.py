@@ -79,6 +79,13 @@ def test_duplicate_objects_and_relations_are_deduplicated() -> None:
 def test_object_ids_are_deterministic() -> None:
     assert make_object_id(ObjectType.TEAM, "Payments") == "team-payments"
     assert make_object_id(ObjectType.SERVICE, "Payment API") == "service-payment-api"
+    assert make_object_id(ObjectType.REPOSITORY, "payment-service") == "repository-payment-service"
+
+
+def test_object_ids_support_chinese_names() -> None:
+    assert make_object_id(ObjectType.TEAM, "支付团队") == "team-支付团队"
+    assert make_object_id(ObjectType.SERVICE, "支付服务") == "service-支付服务"
+    assert make_object_id(ObjectType.PERSON, "张三") == "person-张三"
 
 
 def test_malformed_llm_json_is_rejected() -> None:

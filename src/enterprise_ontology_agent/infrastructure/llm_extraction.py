@@ -181,7 +181,10 @@ def normalize_object_name(name: object) -> str:
     """Normalize an object name for deterministic identifiers and lookups."""
     if not isinstance(name, str):
         raise ValueError("Object and relation names must be strings")
-    normalized = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    normalized = "".join(
+        character.lower() if character.isalnum() else "-" for character in name
+    )
+    normalized = re.sub(r"-+", "-", normalized).strip("-")
     if not normalized:
         raise ValueError("Object and relation names must contain letters or numbers")
     return normalized
