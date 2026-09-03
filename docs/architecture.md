@@ -39,3 +39,50 @@ those validated domain models to and from parameterized Cypher queries.
 
 Neo4j connection settings come from `NEO4J_URI`, `NEO4J_USERNAME`,
 `NEO4J_PASSWORD`, and `NEO4J_DATABASE`. Credentials must not be committed.
+
+## Run the Neo4j smoke test
+
+The smoke test writes four idempotent demo objects and three relations. It does
+not delete or reset anything in Neo4j. Use a development database, not a shared
+or production database. The Neo4j user needs permission to create the
+object-ID constraint and to read and write graph data.
+
+1. Install the project dependencies:
+
+   ```powershell
+   python -m pip install -e ".[dev]"
+   ```
+
+2. Set the connection variables in the same PowerShell window. Start from the
+   safe placeholders in `.env.example`; the project does not load `.env` files
+   automatically.
+
+   ```powershell
+   $env:NEO4J_URI = "neo4j://localhost:7687"
+   $env:NEO4J_USERNAME = "neo4j"
+   $env:NEO4J_PASSWORD = "replace-with-your-password"
+   $env:NEO4J_DATABASE = "neo4j"
+   ```
+
+3. Run the smoke test from the repository root:
+
+   ```powershell
+   python scripts/neo4j_smoke.py
+   ```
+
+   A successful run reports that four objects, three relations, and the
+   persisted `Payment API` were verified. Re-running it does not create
+   duplicate demo nodes or identical relations.
+
+## Run the optional live integration test
+
+The normal test suite never requires Neo4j. To run the live test after setting
+the connection variables above, explicitly opt in:
+
+```powershell
+$env:RUN_NEO4J_INTEGRATION = "1"
+python -m pytest tests/test_neo4j_integration.py
+```
+
+This test writes two idempotent records with `integration-` IDs and one
+relation. It does not remove them.
