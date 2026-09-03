@@ -90,3 +90,18 @@ def test_invalid_relation_combinations_have_clear_errors(
             target_id="target-1",
             target_type=target_type,
         )
+
+
+@pytest.mark.parametrize("field", ["source_id", "target_id"])
+def test_relation_rejects_blank_endpoint_ids(field: str) -> None:
+    values = {
+        "source_id": "person-1",
+        "source_type": ObjectType.PERSON,
+        "relation_type": RelationType.MEMBER_OF,
+        "target_id": "team-1",
+        "target_type": ObjectType.TEAM,
+    }
+    values[field] = "   "
+
+    with pytest.raises(ValidationError, match="must not be blank"):
+        OntologyRelation(**values)
