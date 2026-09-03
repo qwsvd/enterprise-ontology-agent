@@ -24,8 +24,9 @@ Data
 - **Retrieval:** `Neo4jGraphRetrieval` provides four fixed, typed graph lookups.
 - **Agent:** `GraphAgent` selects one of those typed lookups through LLM tool
   calling and returns only after an approved graph tool has executed.
-- **API / MCP:** **future work.** It will expose the application to callers and
-  compatible tools.
+- **API:** **future work.** It will expose the application to callers.
+- **MCP:** The stdio-only Enterprise Ontology MCP Server exposes four
+  deterministic, read-only graph retrieval tools.
 
 The domain layer should remain independent from storage, network, and other
 infrastructure choices.
@@ -103,3 +104,34 @@ It prints aggregate metrics and writes all per-case traces to
 `artifacts/agent_eval_results.json`. No-result accuracy uses a deliberately
 small set of English and Chinese phrases, so it can undercount correct but
 unrecognized paraphrases; it is not an LLM-based quality judgment.
+
+## Use the Enterprise Ontology MCP Server
+
+The MCP server exposes only deterministic, read-only graph tools. It does not
+call an LLM and does not give MCP clients arbitrary Cypher access.
+
+```text
+MCP Host
+  ↓
+MCP Client
+  ↓ stdio
+Enterprise Ontology MCP Server
+  ↓
+typed Neo4jGraphRetrieval
+  ↓
+Neo4j
+```
+
+Set the Neo4j environment variables above, then start the stdio server:
+
+```powershell
+python scripts/mcp_server.py
+```
+
+Do not print application output to stdout while it runs, because stdout carries
+the MCP protocol. For local development, the installed MCP v2 CLI can launch
+the server through the official Inspector:
+
+```powershell
+mcp dev scripts/mcp_server.py
+```
