@@ -1,0 +1,4 @@
+Alice joined the Payments team.
+The Payments team owns the Payment API.
+The payment-service repository implements the Payment API.
+INC-204 affected the Payment API.
