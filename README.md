@@ -2,10 +2,15 @@
 
 [![CI](https://github.com/qwsvd/enterprise-ontology-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/qwsvd/enterprise-ontology-agent/actions/workflows/ci.yml)
 
-Enterprise Ontology Agent converts structured data, GitHub repository metadata,
-and natural-language enterprise descriptions into a validated ontology stored in
-Neo4j. It exposes deterministic graph retrieval to a grounded LLM tool-calling
-agent and to four read-only MCP tools.
+Enterprise Ontology Agent is an end-to-end enterprise knowledge system that
+models people, teams, services, repositories, and incidents as a validated
+ontology in Neo4j. It combines multi-source ingestion, LLM-based ontology
+extraction, deterministic graph retrieval, grounded tool-calling agents,
+evaluation, and read-only MCP access.
+
+**Built with:** Python · Neo4j · Pydantic · LLM Tool Calling · MCP · GitHub Actions
+
+**Verified:** 93 automated tests · CI passing · 20-case bilingual agent benchmark · reproducible package build
 
 ## Why this project exists
 
@@ -16,19 +21,16 @@ requires the agent to retrieve graph evidence before it can answer.
 
 ## What is implemented
 
-- Typed Pydantic ontology objects and relations with domain/range validation
-- Readable deterministic object IDs, including Unicode entity names
-- An infrastructure-independent in-memory ontology graph
-- Idempotent Neo4j object and relation persistence
-- Optional provenance metadata with preservation on partial updates
-- Validated structured JSON ingestion
-- Public GitHub repository metadata ingestion with an optional API token
-- OpenAI-compatible LLM extraction into validated ontology models
-- Four fixed, typed Neo4j graph retrieval operations
-- A bounded LLM function-calling agent with a completed-tool grounding guard
-- A reproducible 20-case English/Chinese evaluation with trace-based metrics
+- A bounded, grounded LLM tool-calling agent backed by four typed graph operations
+- Fixed, parameterized Neo4j retrieval with validated ontology results
+- OpenAI-compatible LLM extraction with deterministic Unicode object IDs
+- Validated ingestion from structured JSON and public GitHub repositories
+- Idempotent Neo4j persistence with provenance-safe updates
+- Typed Pydantic ontology objects and domain/range-validated relations
+- A reproducible 20-case English/Chinese agent evaluation with trace-based metrics
 - A stdio MCP v2 server exposing exactly four read-only graph tools
-- Offline automated tests and GitHub Actions installation, test, and build checks
+- An infrastructure-independent in-memory ontology graph
+- Offline automated tests, locked dependencies, CI, and package-build verification
 
 ## Architecture
 
@@ -51,6 +53,26 @@ flowchart TD
 LLM extraction creates candidate ontology objects and relations, but Pydantic
 validation remains authoritative. The MCP server does not call an LLM, and
 neither the agent nor MCP clients can submit arbitrary Cypher.
+
+## Engineering Highlights
+
+- **Typed knowledge modeling:** Pydantic models enforce object types, relation
+  domain/range rules, nonblank identifiers, and provenance structure before data
+  reaches persistence.
+- **Evidence-grounded agent execution:** The bounded agent accepts a final answer
+  only after an approved graph tool has completed, preventing ungrounded direct
+  answers in the normal question flow.
+- **Fixed parameterized graph retrieval:** Four explicit retrieval operations use
+  parameterized Cypher, stable ordering, and validated `OntologyObject` results;
+  the LLM cannot generate or execute arbitrary database queries.
+- **Multi-source ingestion:** Structured JSON, public GitHub repository metadata,
+  and natural-language extraction all converge on the same authoritative domain
+  validation and Neo4j repository.
+- **Reproducible trace-based evaluation:** Checked-in bilingual cases measure tool
+  selection, arguments, expected entities, grounding, no-result behavior, errors,
+  and latency from recorded agent traces.
+- **CI and delivery baseline:** Locked Python 3.12 dependencies, offline tests,
+  lockfile verification, and package builds run automatically in GitHub Actions.
 
 ## Ontology example
 
@@ -174,7 +196,7 @@ client; a live Inspector tool invocation is not claimed here.
 
 ## Evaluation
 
-### Local controlled benchmark
+### 20-case controlled bilingual benchmark
 
 The locally generated, uncommitted `artifacts/agent_eval_results.json` records a
 completed run of the 20 checked-in English/Chinese cases in
@@ -182,20 +204,20 @@ completed run of the 20 checked-in English/Chinese cases in
 
 | Metric | Result |
 | --- | ---: |
-| Tool selection accuracy | 100% |
-| Argument accuracy | 100% |
-| Expected entity recall | 100% |
-| Grounded completion rate | 100% |
-| No-result accuracy | 100% |
-| Error rate | 0% |
+| Tool selection accuracy | 20/20 (100%) |
+| Argument accuracy | 20/20 (100%) |
+| Expected entity recall | 16/16 positive cases (100%) |
+| Grounded completion rate | 20/20 (100%) |
+| No-result accuracy | 4/4 (100%) |
+| Error rate | 0/20 (0%) |
 | Mean latency | 1.469 s |
 | p50 latency | 1.416 s |
 | p95 latency | 1.857 s |
 
-This is a small controlled benchmark of the checked-in sample graph and query
-patterns, not a general accuracy or scalability claim. Evaluation reads an
-existing graph and does not prepare or mutate it; live runs may consume LLM API
-usage.
+Results describe the checked-in controlled evaluation set and use the metric
+definitions documented in [docs/evaluation.md](docs/evaluation.md). They do not
+imply general model accuracy. Evaluation reads an existing graph and does not
+prepare or mutate it; live runs may consume LLM API usage.
 
 ```powershell
 python scripts/evaluate_agent.py
@@ -230,29 +252,56 @@ docs/                           Architecture, ontology, and evaluation details
 .github/workflows/              Continuous integration workflow
 ```
 
-## Design decisions
+## Key Engineering Decisions
 
-1. Ontology types and relation rules are validated before persistence.
-2. Retrieval uses fixed parameterized Cypher instead of model-generated queries.
-3. The agent must complete an approved graph tool before returning an answer.
-4. Provenance is preserved when an update omits optional provenance fields.
-5. Offline tests are separated from paid or live integrations.
-6. MCP remains read-only and LLM-free.
+### Typed validation before persistence
 
-## Limitations
+Ontology types and relation domain/range rules are enforced by Pydantic models
+before objects or relations are sent to Neo4j.
 
-- The ontology intentionally contains five object types and four relation types.
-- Retrieval supports four fixed operations with exact, case-sensitive names.
-- MCP supports stdio only; it has no authentication or HTTP transport.
-- There is no vector, hybrid, embedding, or GraphRAG retrieval.
-- The evaluation dataset is small and controlled.
-- LLM extraction output is structurally validated, but its factual correctness
-  is not independently verified.
-- GitHub ingestion persists the repository object, not issue or pull-request
-  ontology objects.
-- The project is not designed or benchmarked for production scale.
+### Fixed queries instead of generated Cypher
 
-## Roadmap
+Retrieval uses four parameterized Cypher queries. Natural-language input can
+select an approved tool, but it cannot become an arbitrary database query.
 
-Future work may include a richer ontology, broader typed retrieval, a larger
-evaluation set, authenticated HTTP MCP, and deployment observability.
+### Graph evidence required before an answer
+
+The agent must successfully execute at least one approved retrieval tool before
+returning a final response, including when the graph result is empty.
+
+### Provenance-safe idempotent updates
+
+Repeated persistence avoids duplicate objects and identical relations, keeps an
+object's type immutable, and preserves stored provenance when an update omits it.
+
+### Offline verification separated from live integrations
+
+The default test suite uses injected fakes and skips the optional live Neo4j test,
+so CI requires no database, provider credentials, or external API access.
+
+### Read-only, LLM-free MCP boundary
+
+MCP exposes the same four typed retrieval operations over stdio without embedding
+an LLM or exposing arbitrary Cypher.
+
+## Current Scope
+
+- The ontology models five enterprise object types and four explicit relation
+  types.
+- Retrieval provides four deterministic, exact-name, case-sensitive graph
+  operations with empty-list behavior when no fact matches.
+- MCP provides those four operations as read-only stdio tools.
+- Evaluation covers 20 controlled English and Chinese cases across all four tools,
+  including positive and no-result scenarios.
+- GitHub ingestion persists repository objects with provenance, while LLM
+  extraction is structurally validated through the ontology models.
+
+Detailed system boundaries and evaluation constraints are documented in
+[docs/architecture.md](docs/architecture.md) and
+[docs/evaluation.md](docs/evaluation.md).
+
+## Next Extensions
+
+- Expand ontology coverage and typed retrieval operations.
+- Broaden multilingual and adversarial evaluation cases.
+- Add authenticated remote MCP transport and operational observability.
