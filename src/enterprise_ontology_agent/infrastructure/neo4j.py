@@ -22,8 +22,12 @@ REQUIRE object.id IS UNIQUE
 
 _SAVE_OBJECT = """
 MERGE (object:OntologyObject {id: $id})
-SET object.name = $name,
-    object.object_type = $object_type
+ON CREATE SET object.object_type = $object_type
+WITH object, object.object_type = $object_type AS type_matches
+FOREACH (_ IN CASE WHEN type_matches THEN [1] ELSE [] END |
+    SET object.name = $name
+)
+RETURN object.object_type AS stored_type, type_matches
 """
 
 _GET_OBJECT = """
@@ -94,11 +98,18 @@ class Neo4jRepository:
     def save_object(self, ontology_object: OntologyObject) -> None:
         """Create or update an ontology object without duplicating its ID."""
         with self._driver.session(database=self._database) as session:
-            session.run(
+            record = session.run(
                 _SAVE_OBJECT,
                 id=ontology_object.id,
                 name=ontology_object.name,
                 object_type=ontology_object.object_type.value,
+            ).single()
+
+        if record is None or not record["type_matches"]:
+            stored_type = record["stored_type"] if record is not None else "unknown"
+            raise ValueError(
+                f"Object type mismatch for '{ontology_object.id}': stored object is "
+                f"{stored_type}, incoming object is {ontology_object.object_type.value}"
             )
 
     def get_object(self, object_id: str) -> OntologyObject | None:

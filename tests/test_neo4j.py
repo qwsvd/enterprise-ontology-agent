@@ -56,8 +56,8 @@ class FakeDriver:
         self.closed = True
 
 
-def test_save_object_uses_parameters_and_duplicate_safe_merge() -> None:
-    driver = FakeDriver()
+def test_save_object_creates_new_object_with_parameterized_merge() -> None:
+    driver = FakeDriver(responses=[[], [{"stored_type": "Person", "type_matches": True}]])
     repository = Neo4jRepository(driver=driver, database="neo4j")
     ontology_object = OntologyObject(
         id="person-1",
@@ -71,6 +71,7 @@ def test_save_object_uses_parameters_and_duplicate_safe_merge() -> None:
     query, parameters = driver.calls[1]
     assert "IS UNIQUE" in constraint_query
     assert "MERGE (object:OntologyObject {id: $id})" in query
+    assert "ON CREATE SET object.object_type = $object_type" in query
     assert "person-1" not in query
     assert "Ada Lovelace" not in query
     assert parameters == {
@@ -78,6 +79,47 @@ def test_save_object_uses_parameters_and_duplicate_safe_merge() -> None:
         "name": "Ada Lovelace",
         "object_type": "Person",
     }
+
+
+def test_save_object_updates_name_when_type_is_unchanged() -> None:
+    driver = FakeDriver(responses=[[], [{"stored_type": "Person", "type_matches": True}]])
+    repository = Neo4jRepository(driver=driver, database="neo4j")
+
+    repository.save_object(
+        OntologyObject(
+            id="person-1",
+            name="Ada Byron",
+            object_type=ObjectType.PERSON,
+        )
+    )
+
+    query, parameters = driver.calls[1]
+    assert "CASE WHEN type_matches" in query
+    assert "SET object.name = $name" in query
+    assert parameters["name"] == "Ada Byron"
+    assert parameters["object_type"] == "Person"
+
+
+def test_save_object_rejects_object_type_change() -> None:
+    driver = FakeDriver(responses=[[], [{"stored_type": "Person", "type_matches": False}]])
+    repository = Neo4jRepository(driver=driver, database="neo4j")
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Object type mismatch for 'person-1': stored object is Person, "
+            "incoming object is Team"
+        ),
+    ):
+        repository.save_object(
+            OntologyObject(
+                id="person-1",
+                name="Platform",
+                object_type=ObjectType.TEAM,
+            )
+        )
+
+    assert len(driver.calls) == 2
 
 
 def test_get_object_deserializes_domain_object() -> None:
