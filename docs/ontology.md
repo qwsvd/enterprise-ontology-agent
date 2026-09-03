@@ -1,7 +1,8 @@
 # Planned Ontology
 
-This document defines the intended ontology vocabulary. It is documentation
-only: no Pydantic models or validation rules have been implemented yet.
+This document defines the current ontology vocabulary. The object and relation
+types are implemented as string enums, and Pydantic models validate objects and
+relation domain/range combinations.
 
 ## Object types
 
@@ -18,5 +19,10 @@ only: no Pydantic models or validation rules have been implemented yet.
 - `Repository IMPLEMENTS Service`
 - `Incident AFFECTS Service`
 
-Future work can define attributes, identifiers, validation rules, and lifecycle
-semantics for these types and relations.
+`OntologyObject` contains an `id`, `name`, and `object_type`.
+`OntologyRelation` contains source and target IDs and types plus a relation
+type. IDs and object names cannot be blank, and only the relation combinations
+listed above are accepted.
+
+Future work can define additional attributes and lifecycle semantics. Graph
+storage and other infrastructure remain outside the ontology domain model.
