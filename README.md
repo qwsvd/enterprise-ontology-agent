@@ -74,6 +74,19 @@ neither the agent nor MCP clients can submit arbitrary Cypher.
 - **CI and delivery baseline:** Locked Python 3.12 dependencies, offline tests,
   lockfile verification, and package builds run automatically in GitHub Actions.
 
+## Running Demo
+
+![Neo4j ontology graph](docs/images/neo4j-ontology-graph.png)
+
+The persisted sample ontology connects people, teams, services, repositories,
+and incidents through typed `MEMBER_OF`, `OWNS`, `IMPLEMENTS`, and `AFFECTS`
+relationships.
+
+![Grounded graph agent demo](docs/images/grounded-agent-demo.png)
+
+The graph agent answers natural-language questions by selecting approved typed
+retrieval tools and using the retrieved Neo4j evidence in its response.
+
 ## Ontology example
 
 ```text
