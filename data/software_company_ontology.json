@@ -1,0 +1,26 @@
+{
+  "objects": [
+    {"id": "team-commerce", "name": "Commerce", "object_type": "Team"},
+    {"id": "team-platform", "name": "Platform", "object_type": "Team"},
+    {"id": "service-checkout", "name": "Checkout API", "object_type": "Service"},
+    {"id": "service-catalog", "name": "Catalog API", "object_type": "Service"},
+    {"id": "service-notifications", "name": "Notification Service", "object_type": "Service"},
+    {"id": "repository-checkout-api", "name": "checkout-api", "object_type": "Repository"},
+    {"id": "repository-catalog-api", "name": "catalog-api", "object_type": "Repository"},
+    {"id": "repository-notification-worker", "name": "notification-worker", "object_type": "Repository"},
+    {"id": "incident-inc-501", "name": "INC-501", "object_type": "Incident"},
+    {"id": "incident-inc-502", "name": "INC-502", "object_type": "Incident"},
+    {"id": "incident-inc-503", "name": "INC-503", "object_type": "Incident"}
+  ],
+  "relations": [
+    {"source_id": "team-commerce", "source_type": "Team", "relation_type": "OWNS", "target_id": "service-checkout", "target_type": "Service"},
+    {"source_id": "team-commerce", "source_type": "Team", "relation_type": "OWNS", "target_id": "service-catalog", "target_type": "Service"},
+    {"source_id": "team-platform", "source_type": "Team", "relation_type": "OWNS", "target_id": "service-notifications", "target_type": "Service"},
+    {"source_id": "repository-checkout-api", "source_type": "Repository", "relation_type": "IMPLEMENTS", "target_id": "service-checkout", "target_type": "Service"},
+    {"source_id": "repository-catalog-api", "source_type": "Repository", "relation_type": "IMPLEMENTS", "target_id": "service-catalog", "target_type": "Service"},
+    {"source_id": "repository-notification-worker", "source_type": "Repository", "relation_type": "IMPLEMENTS", "target_id": "service-notifications", "target_type": "Service"},
+    {"source_id": "incident-inc-501", "source_type": "Incident", "relation_type": "AFFECTS", "target_id": "service-checkout", "target_type": "Service"},
+    {"source_id": "incident-inc-502", "source_type": "Incident", "relation_type": "AFFECTS", "target_id": "service-catalog", "target_type": "Service"},
+    {"source_id": "incident-inc-503", "source_type": "Incident", "relation_type": "AFFECTS", "target_id": "service-notifications", "target_type": "Service"}
+  ]
+}
