@@ -1,114 +1,93 @@
-# Planned Architecture
+# Current Architecture
 
-This project grows in small, understandable steps. Ontology validation and two
-domain-level representations now exist: an in-memory `OntologyGraph` and a
-Neo4j persistence adapter.
+The project separates ontology rules from network and storage adapters. Domain
+models are valid without Neo4j, an LLM provider, GitHub, or MCP.
 
 ```text
-Data
-  → Ontology validation
-  → Knowledge Graph
-  → Retrieval
-  → Agent
-  → API / MCP
+Data sources
+  → ingestion or LLM extraction
+  → Pydantic ontology validation
+  → Neo4jRepository
+  → Neo4j
+  → fixed Neo4jGraphRetrieval operations
+  → GraphAgent or read-only MCP tools
 ```
 
-## Component plan
+## Component boundaries
 
-- **Data:** source information supplied to the application.
-- **Ontology validation:** Pydantic domain models validate ontology objects and
-  relation domain/range combinations.
-- **Knowledge Graph:** `OntologyGraph` provides a small in-memory domain
-  container. `Neo4jRepository` is the first persistence implementation and
-  stores the same domain objects and relations in Neo4j.
-- **Retrieval:** `Neo4jGraphRetrieval` provides four fixed, typed graph lookups.
-- **Agent:** `GraphAgent` selects one of those typed lookups through LLM tool
-  calling and returns only after an approved graph tool has executed.
-- **API:** **future work.** It will expose the application to callers.
-- **MCP:** The stdio-only Enterprise Ontology MCP Server exposes four
-  deterministic, read-only graph retrieval tools.
+- `ontology` defines `ObjectType`, `RelationType`, `OntologyObject`,
+  `OntologyRelation`, and the in-memory `OntologyGraph`. It contains all
+  relation domain/range rules and has no infrastructure dependency.
+- `infrastructure` contains JSON, GitHub, and LLM ingestion, Neo4j persistence,
+  typed retrieval, the bounded graph agent, and evaluation logic.
+- `Neo4jRepository` serializes validated domain objects and relations. It keeps
+  object IDs unique, prevents object-type changes, avoids duplicate identical
+  relations, and preserves stored provenance when an update supplies `None`.
+- `Neo4jGraphRetrieval` runs four fixed, parameterized, read-only Cypher queries
+  and reconstructs `OntologyObject` values, including provenance.
+- `GraphAgent` lets an OpenAI-compatible LLM select only those four operations.
+  Tool names and arguments are validated, execution is limited to three tool
+  rounds, and a final answer requires at least one completed graph tool.
+- The MCP v2 layer exposes the same four retrieval operations over stdio. It
+  shares one retrieval connection for the server lifespan and does not call an
+  LLM or expose arbitrary Cypher.
 
-The domain layer should remain independent from storage, network, and other
-infrastructure choices.
+There is no HTTP application API. API delivery remains future work.
 
-## Domain and infrastructure separation
+## Configuration
 
-The `ontology` package owns object types, relation rules, and the in-memory
-graph. It has no Neo4j dependency. The `infrastructure` package translates
-those validated domain models to and from parameterized Cypher queries.
+Neo4j connections use `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, and
+`NEO4J_DATABASE`. LLM-backed extraction, agent, and evaluation paths use
+`LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`. GitHub ingestion can optionally
+use `GITHUB_TOKEN`; public repositories can be read without it subject to API
+rate limits.
 
-Neo4j connection settings come from `NEO4J_URI`, `NEO4J_USERNAME`,
-`NEO4J_PASSWORD`, and `NEO4J_DATABASE`. Credentials must not be committed.
+The project reads these values from the process environment and does not load a
+`.env` file automatically.
 
-## Run the Neo4j smoke test
+## Neo4j smoke test
 
-The smoke test writes four idempotent demo objects and three relations. It does
-not delete or reset anything in Neo4j. Use a development database, not a shared
-or production database. The Neo4j user needs permission to create the
-object-ID constraint and to read and write graph data.
+The smoke test writes four idempotent objects and three relations. It does not
+delete or reset data. Use a development database whose user can create the
+object-ID constraint and read and write graph data.
 
-1. Install the project dependencies:
+```powershell
+python scripts/neo4j_smoke.py
+```
 
-   ```powershell
-   python -m pip install -e ".[dev]"
-   ```
+It saves and reads `Payments`, `Payment API`, `payment-service`, and `INC-204`,
+checks the three direct neighbors of `Payment API`, closes the connection,
+reconnects, and verifies persistence. Re-running it does not create duplicate
+nodes or identical relations.
 
-2. Set the connection variables in the same PowerShell window. Start from the
-   safe placeholders in `.env.example`; the project does not load `.env` files
-   automatically.
+## Optional live Neo4j integration test
 
-   ```powershell
-   $env:NEO4J_URI = "neo4j://localhost:7687"
-   $env:NEO4J_USERNAME = "neo4j"
-   $env:NEO4J_PASSWORD = "replace-with-your-password"
-   $env:NEO4J_DATABASE = "neo4j"
-   ```
-
-3. Run the smoke test from the repository root:
-
-   ```powershell
-   python scripts/neo4j_smoke.py
-   ```
-
-   A successful run reports that four objects, three relations, and the
-   persisted `Payment API` were verified. Re-running it does not create
-   duplicate demo nodes or identical relations.
-
-## Run the optional live integration test
-
-The normal test suite never requires Neo4j. To run the live test after setting
-the connection variables above, explicitly opt in:
+The normal suite does not require Neo4j. Explicitly opt in after configuring a
+development database:
 
 ```powershell
 $env:RUN_NEO4J_INTEGRATION = "1"
 python -m pytest tests/test_neo4j_integration.py
 ```
 
-This test writes two idempotent records with `integration-` IDs and one
-relation. It does not remove them.
+The test writes two records with `integration-` IDs and one relation. It does
+not remove them.
 
-## Run the live graph-agent evaluation
+## Graph-agent evaluation
 
-The evaluation sends the checked-in questions to the configured LLM and reads
-the existing Neo4j graph, so it may consume provider usage. It does not seed,
-mutate, reset, or prepare graph data. Before running it, prepare the graph
-separately so it contains the benchmark's expected sample facts for `Payments`,
-`Payment API`, `payment-service`, `INC-204`, and `Alice`. Set `LLM_API_KEY`,
-`LLM_BASE_URL`, and `LLM_MODEL`, then run:
+Evaluation reads the existing Neo4j graph and calls the configured LLM. It does
+not seed, mutate, reset, or otherwise prepare graph data. Data preparation is a
+separate step; the expected sample facts must already exist.
 
 ```powershell
 python scripts/evaluate_agent.py
 ```
 
-It prints aggregate metrics and writes all per-case traces to
-`artifacts/agent_eval_results.json`. No-result accuracy uses a deliberately
-small set of English and Chinese phrases, so it can undercount correct but
-unrecognized paraphrases; it is not an LLM-based quality judgment.
+The command prints aggregate metrics and writes complete per-case traces to
+`artifacts/agent_eval_results.json`. See [evaluation.md](evaluation.md) for the
+methodology and limitations.
 
-## Use the Enterprise Ontology MCP Server
-
-The MCP server exposes only deterministic, read-only graph tools. It does not
-call an LLM and does not give MCP clients arbitrary Cypher access.
+## MCP data flow
 
 ```text
 MCP Host
@@ -122,16 +101,18 @@ typed Neo4jGraphRetrieval
 Neo4j
 ```
 
-Set the Neo4j environment variables above, then start the stdio server:
+Start the protocol server without ordinary stdout output:
 
 ```powershell
 python scripts/mcp_server.py
 ```
 
-Do not print application output to stdout while it runs, because stdout carries
-the MCP protocol. For local development, the installed MCP v2 CLI can launch
-the server through the official Inspector:
+Inspect the server during development with the official MCP CLI and Inspector:
 
 ```powershell
 mcp dev scripts/mcp_server.py
 ```
+
+Only four deterministic read-only tools are exposed. There are no MCP resources,
+prompts, sampling, LLM calls, authentication, HTTP transport, or arbitrary
+Cypher execution.

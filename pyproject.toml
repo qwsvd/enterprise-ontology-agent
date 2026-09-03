@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "enterprise-ontology-agent"
 version = "0.1.0"
-description = "A small learning project for enterprise ontology application engineering."
+description = "Grounded enterprise ontology agent with Neo4j, typed retrieval, evaluation, and read-only MCP tools."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
