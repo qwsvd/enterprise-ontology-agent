@@ -75,7 +75,7 @@ def test_save_object_creates_new_object_with_parameterized_merge() -> None:
     assert "IS UNIQUE" in constraint_query
     assert "MERGE (object:OntologyObject {id: $id})" in query
     assert "ON CREATE SET object.object_type = $object_type" in query
-    assert "object.source_url = $source_url" in query
+    assert "object.source_url = coalesce($source_url, object.source_url)" in query
     assert "person-1" not in query
     assert "Ada Lovelace" not in query
     assert parameters == {
@@ -105,6 +105,48 @@ def test_save_object_updates_name_when_type_is_unchanged() -> None:
     assert "SET object.name = $name" in query
     assert parameters["name"] == "Ada Byron"
     assert parameters["object_type"] == "Person"
+
+
+def test_save_object_preserves_provenance_when_incoming_values_are_none() -> None:
+    driver = FakeDriver(responses=[[], [{"stored_type": "Person", "type_matches": True}]])
+    repository = Neo4jRepository(driver=driver, database="neo4j")
+
+    repository.save_object(
+        OntologyObject(
+            id="person-1",
+            name="Ada Byron",
+            object_type=ObjectType.PERSON,
+        )
+    )
+
+    query, parameters = driver.calls[1]
+    assert "coalesce($source_url, object.source_url)" in query
+    assert "coalesce($source_type, object.source_type)" in query
+    assert "coalesce($external_id, object.external_id)" in query
+    assert parameters["source_url"] is None
+    assert parameters["source_type"] is None
+    assert parameters["external_id"] is None
+
+
+def test_save_object_updates_provenance_when_incoming_values_are_present() -> None:
+    driver = FakeDriver(responses=[[], [{"stored_type": "Person", "type_matches": True}]])
+    repository = Neo4jRepository(driver=driver, database="neo4j")
+
+    repository.save_object(
+        OntologyObject(
+            id="person-1",
+            name="Ada Byron",
+            object_type=ObjectType.PERSON,
+            source_url="https://example.test/people/1",
+            source_type="example",
+            external_id="1",
+        )
+    )
+
+    _, parameters = driver.calls[1]
+    assert parameters["source_url"] == "https://example.test/people/1"
+    assert parameters["source_type"] == "example"
+    assert parameters["external_id"] == "1"
 
 
 def test_save_object_rejects_object_type_change() -> None:

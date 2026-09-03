@@ -26,9 +26,9 @@ ON CREATE SET object.object_type = $object_type
 WITH object, object.object_type = $object_type AS type_matches
 FOREACH (_ IN CASE WHEN type_matches THEN [1] ELSE [] END |
     SET object.name = $name,
-        object.source_url = $source_url,
-        object.source_type = $source_type,
-        object.external_id = $external_id
+        object.source_url = coalesce($source_url, object.source_url),
+        object.source_type = coalesce($source_type, object.source_type),
+        object.external_id = coalesce($external_id, object.external_id)
 )
 RETURN object.object_type AS stored_type, type_matches
 """
