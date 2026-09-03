@@ -42,11 +42,14 @@ class GraphAgent:
             {"role": "user", "content": question},
         ]
         tool_iterations = 0
+        graph_tool_executed = False
 
         while True:
             message = self._client.chat_with_tools(messages, _GRAPH_TOOLS)
             tool_calls = message.get("tool_calls")
             if not tool_calls:
+                if not graph_tool_executed:
+                    raise ValueError("Agent must use a graph tool before answering.")
                 content = message.get("content")
                 if not isinstance(content, str) or not content.strip():
                     raise ValueError("LLM did not return a final answer")
@@ -70,6 +73,7 @@ class GraphAgent:
             for tool_call in tool_calls:
                 call_id, name, argument = _validate_tool_call(tool_call)
                 results = _run_retrieval_tool(self._retrieval, name, argument)
+                graph_tool_executed = True
                 messages.append(
                     {
                         "role": "tool",

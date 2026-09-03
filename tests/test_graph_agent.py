@@ -67,6 +67,13 @@ def _object() -> OntologyObject:
     )
 
 
+def test_agent_rejects_a_direct_answer_before_a_graph_tool_call() -> None:
+    client = FakeLLMClient([{"content": "Payments owns Payment API."}])
+
+    with pytest.raises(ValueError, match="Agent must use a graph tool before answering"):
+        GraphAgent(client, FakeRetrieval()).answer("Who owns Payment API?")  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize(
     ("tool_name", "argument_name", "argument_value", "answer"),
     [
