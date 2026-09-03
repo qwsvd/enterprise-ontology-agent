@@ -30,11 +30,21 @@ class OntologyObject(BaseModel):
     id: str
     name: str
     object_type: ObjectType
+    source_url: str | None = None
+    source_type: str | None = None
+    external_id: str | None = None
 
     @field_validator("id", "name")
     @classmethod
     def value_must_not_be_blank(cls, value: str) -> str:
         if not value.strip():
+            raise ValueError("must not be blank")
+        return value
+
+    @field_validator("source_url", "source_type", "external_id")
+    @classmethod
+    def provenance_value_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
             raise ValueError("must not be blank")
         return value
 

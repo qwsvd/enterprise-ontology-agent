@@ -25,7 +25,10 @@ MERGE (object:OntologyObject {id: $id})
 ON CREATE SET object.object_type = $object_type
 WITH object, object.object_type = $object_type AS type_matches
 FOREACH (_ IN CASE WHEN type_matches THEN [1] ELSE [] END |
-    SET object.name = $name
+    SET object.name = $name,
+        object.source_url = $source_url,
+        object.source_type = $source_type,
+        object.external_id = $external_id
 )
 RETURN object.object_type AS stored_type, type_matches
 """
@@ -103,6 +106,9 @@ class Neo4jRepository:
                 id=ontology_object.id,
                 name=ontology_object.name,
                 object_type=ontology_object.object_type.value,
+                source_url=ontology_object.source_url,
+                source_type=ontology_object.source_type,
+                external_id=ontology_object.external_id,
             ).single()
 
         if record is None or not record["type_matches"]:
@@ -164,4 +170,7 @@ class Neo4jRepository:
             id=node["id"],
             name=node["name"],
             object_type=ObjectType(node["object_type"]),
+            source_url=node.get("source_url"),
+            source_type=node.get("source_type"),
+            external_id=node.get("external_id"),
         )

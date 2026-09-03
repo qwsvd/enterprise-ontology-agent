@@ -63,6 +63,9 @@ def test_save_object_creates_new_object_with_parameterized_merge() -> None:
         id="person-1",
         name="Ada Lovelace",
         object_type=ObjectType.PERSON,
+        source_url="https://example.test/people/1",
+        source_type="example",
+        external_id="1",
     )
 
     repository.save_object(ontology_object)
@@ -72,12 +75,16 @@ def test_save_object_creates_new_object_with_parameterized_merge() -> None:
     assert "IS UNIQUE" in constraint_query
     assert "MERGE (object:OntologyObject {id: $id})" in query
     assert "ON CREATE SET object.object_type = $object_type" in query
+    assert "object.source_url = $source_url" in query
     assert "person-1" not in query
     assert "Ada Lovelace" not in query
     assert parameters == {
         "id": "person-1",
         "name": "Ada Lovelace",
         "object_type": "Person",
+        "source_url": "https://example.test/people/1",
+        "source_type": "example",
+        "external_id": "1",
     }
 
 
@@ -132,6 +139,9 @@ def test_get_object_deserializes_domain_object() -> None:
                         "id": "service-1",
                         "name": "Catalog",
                         "object_type": "Service",
+                        "source_url": "https://example.test/services/1",
+                        "source_type": "example",
+                        "external_id": "1",
                     }
                 }
             ],
@@ -145,6 +155,9 @@ def test_get_object_deserializes_domain_object() -> None:
         id="service-1",
         name="Catalog",
         object_type=ObjectType.SERVICE,
+        source_url="https://example.test/services/1",
+        source_type="example",
+        external_id="1",
     )
     query, parameters = driver.calls[1]
     assert "$id" in query

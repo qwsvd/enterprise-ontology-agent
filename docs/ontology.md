@@ -20,6 +20,8 @@ relation domain/range combinations.
 - `Incident AFFECTS Service`
 
 `OntologyObject` contains an `id`, `name`, and `object_type`.
+It may also contain optional provenance fields: `source_url`, `source_type`,
+and `external_id`.
 `OntologyRelation` contains source and target IDs and types plus a relation
 type. IDs and object names cannot be blank, and only the relation combinations
 listed above are accepted.
